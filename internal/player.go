@@ -212,7 +212,7 @@ func (p *Player) updateIdle(input PlayerInput) PlayerState {
 	if input&InputJumped > 0 {
 		return p.startJumping(input)
 	}
-	return PlayerStateIdle
+	return p.startIdling()
 }
 
 // onSolidGround returns true iff the player is on solid ground.
@@ -323,6 +323,7 @@ func (p *Player) handleXVelUpdate(input PlayerInput, accel, maxSpeed float64, us
 // based on the prior state.
 func (p *Player) startFalling(maxFallXSpeed float64) PlayerState {
 	p.sprite.SetAnim(PlayerAnimJump, p.Vel.X < 0) // TODO: pick the last and middle frames of the animation
+	p.sprite.SetTag(jumpDownTag)
 	// test to see if we're colliding with a one-way platform, if so, increment y-velocity and don't change state.
 	collides := p.Collides(p.Hitbox())
 	if collides&CollidedOneWay > 0 && collides.Colliding(p.clipsY) { // if jumping up through a
@@ -356,7 +357,7 @@ func (p *Player) updateFalling(input PlayerInput) (result PlayerState) {
 		if input&InputWalked > 0 {
 			return p.walkingOrRunning(input)
 		} else {
-			return PlayerStateIdle
+			return p.startIdling()
 		}
 	}
 
@@ -414,6 +415,10 @@ func (p *Player) updateLeaping(_ PlayerInput) PlayerState {
 
 func (p *Player) updateLeapingOrJumping(maxFallXSpeed float64) PlayerState {
 	p.Vel.Y = orZero(p.Vel.Y + Gravity/TPS)
+
+	if p.Vel.Y < 0.75 {
+		p.sprite.SetTag(jumpMaxTag)
+	}
 
 	collidesY := p.MoveY()
 	_ = p.MoveX(p.Hitbox())
@@ -499,7 +504,7 @@ func (p *Player) updateOneWayClimbing(input PlayerInput) PlayerState {
 	collidesY := p.MoveY()
 	_ = p.MoveX(p.Hitbox())
 	if !collidesY.Colliding(p.clipsY) {
-		return PlayerStateIdle
+		return p.startIdling()
 	}
 
 	return PlayerStateOneWayClimbing

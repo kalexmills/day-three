@@ -18,11 +18,14 @@ const (
 )
 
 const (
-	idleAnim = "idle.json"
-	jumpAnim = "jump.json"
-	landAnim = "land.json"
-	runAnim  = "run.json"
-	walkAnim = "walk.json"
+	idleAnim    = "idle.json"
+	jumpAnim    = "jump.json"
+	landAnim    = "land.json"
+	runAnim     = "run.json"
+	walkAnim    = "walk.json"
+	jumpUpTag   = "Jump up"
+	jumpMaxTag  = "Max Height"
+	jumpDownTag = "Jump Down"
 )
 
 func LoadPlayerAnims() (*PlayerSprite, error) {
@@ -85,8 +88,14 @@ func (p *PlayerSprite) SetAnim(anim PlayerAnim, left bool) {
 		p.curr = p.run
 	}
 	p.facingLeft = left
-	p.curr.Restart()
-	p.curr.Resume()
+	if anim != PlayerAnimJump { // jumping uses different animation logic
+		p.curr.Restart()
+		p.curr.Resume()
+	}
+}
+
+func (p *PlayerSprite) SetTag(tag string) {
+	p.curr.SetTag(tag)
 }
 
 func (p *PlayerSprite) SetFacing(left bool) {
