@@ -1,4 +1,4 @@
-I# from https://github.com/sinisterstuf/trash-knight/blob/main/.github/workflows/build.yml
+# from https://github.com/sinisterstuf/trash-knight/blob/main/.github/workflows/build.yml
 name: Build Executables
 on: [push]
 jobs:
