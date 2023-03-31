@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+	"golang.org/x/image/colornames"
 	"log"
 	"math"
 	"strings"
@@ -98,6 +100,12 @@ func (s *PlatformerScene) Draw(screen *ebiten.Image) {
 func (s *PlatformerScene) drawDebug(screen *ebiten.Image) {
 	var lines []string
 
+	// print rectangle over hitbox
+	box := s.player.Hitbox()
+	box.X += s.camera.X
+	box.Y += s.camera.Y
+	vector.StrokeRect(screen, float32(box.X), float32(box.Y), float32(box.W), float32(box.H), 2, colornames.Green, true)
+
 	// print FPS
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f", ebiten.ActualFPS()), 300, 0)
 
@@ -136,7 +144,7 @@ func (s *PlatformerScene) LoadLevel(id UID) error {
 		return err
 	}
 	s.processLadders()
-	s.processOneWay()
+	//s.processOneWay()
 	return nil
 }
 
@@ -355,7 +363,7 @@ func (s *PlatformerScene) MoveY(hitbox IRect, amt float64, clip ClipFunc) (actua
 func (s *PlatformerScene) move(hitbox IRect, amount float64, axis IVec2, clip ClipFunc) (actual int, result CollideMask) {
 	move := int(math.Round(amount))
 	if move == 0 {
-		return 0, s.AllOverlapping(hitbox) // TODO: must be pixel-perfect
+		return 0, s.AllOverlapping(hitbox)
 	}
 	actualMoved := 0
 	sign := int(math.Copysign(1, amount))
@@ -379,13 +387,9 @@ func (s *PlatformerScene) at(pt Vec2) (Vec2, CollideMask) {
 	return Vec2{X: float64(cx * s.cellSize), Y: float64(cy * s.cellSize)}, s.gridData(pt.X, pt.Y).CollideMask()
 }
 
-func (s *PlatformerScene) Collides(hitbox IRect, clip ClipFunc) CollideMask {
-	return s.BoxCollides(hitbox, clip)
-}
-
 // Collides performs collision detection for the provided hitbox, travelling at the provided velocity. Velocity is used
 // to handle one-way platforms.
-func (s *PlatformerScene) BoxCollides(hitbox IRect, clip ClipFunc) (result CollideMask) {
+func (s *PlatformerScene) Collides(hitbox IRect, clip ClipFunc) (result CollideMask) {
 	const eps = 1e-3
 	x1, y1, x2, y2 := float64(hitbox.X)+eps, float64(hitbox.Y)+eps, float64(hitbox.X+hitbox.W)-eps, float64(hitbox.Y+hitbox.H)-eps
 
@@ -426,7 +430,6 @@ func (s *PlatformerScene) BoxCollides(hitbox IRect, clip ClipFunc) (result Colli
 
 // AllOverlapping retrieves all cells which the provided hitbox overlaps.
 func (s *PlatformerScene) AllOverlapping(hitbox IRect) (result CollideMask) {
-	// TODO: use a sprite mask also instead of a hitbox!
 	const eps = 1e-3
 	x1, y1, x2, y2 := float64(hitbox.X)+eps, float64(hitbox.Y)+eps, float64(hitbox.X+hitbox.W)-eps, float64(hitbox.Y+hitbox.H)-eps
 	forAllGrid(x1, y1, x2, y2, func(x, y float64) (halt bool) {

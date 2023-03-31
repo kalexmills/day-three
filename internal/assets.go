@@ -110,7 +110,14 @@ func (p *PlayerSprite) Bounds() image.Rectangle {
 const hitboxSliceID = "Hitbox"
 
 func (p *PlayerSprite) Hitbox() image.Rectangle {
-	return p.hitboxes[p.currKey]
+
+	rect := p.hitboxes[p.currKey]
+	if p.facingLeft {
+		dx := rect.Dx()
+		rect.Min.X = 2*dx - rect.Min.X // flip horizontally
+		rect.Max.X = 2*dx - rect.Max.X
+	}
+	return rect
 }
 
 func (p *PlayerSprite) loadHitboxes() error {
