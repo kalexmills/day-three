@@ -157,8 +157,8 @@ func (p *Player) SetPos(pos IVec2) {
 }
 
 // MoveX moves this player by X, updating its hitbox, velocity, and position as needed.
-func (p *Player) MoveX(hitbox IRect) CollideMask {
-	dx, collidesWith := p.Actor.MoveX(hitbox, p.Vel.X, p.clipsX)
+func (p *Player) MoveX() CollideMask {
+	dx, collidesWith := p.Actor.MoveX(p.Hitbox(), p.Bitmask(), p.Vel.X, p.clipsX)
 	p.Pos.X += dx
 	if collidesWith.Colliding(p.clipsX) {
 		p.Vel.X = 0
@@ -166,9 +166,15 @@ func (p *Player) MoveX(hitbox IRect) CollideMask {
 	return collidesWith
 }
 
+func (p *Player) Bitmask() BitGrid {
+	grid := p.sprite.Bitmask()
+	grid = grid.Add(p.Pos)
+	return grid
+}
+
 // MoveY moves this player by Y, updating its hitbox, velocity, and position as needed.
 func (p *Player) MoveY() CollideMask {
-	dy, collidesWith := p.Actor.MoveY(p.Hitbox(), p.Vel.Y, p.clipsY)
+	dy, collidesWith := p.Actor.MoveY(p.Hitbox(), p.Bitmask(), p.Vel.Y, p.clipsY)
 	p.Pos.Y += dy
 	if collidesWith.Colliding(p.clipsY) {
 		p.Vel.Y = 0
@@ -217,7 +223,7 @@ func (p *Player) updateIdle(input PlayerInput) PlayerState {
 
 // onSolidGround returns true iff the player is on solid ground.
 func (p *Player) onSolidGround() bool {
-	collides := p.Actor.Collides(p.Hitbox().Add(IVec2{0, 1}))
+	collides := p.Actor.Collides(p.Hitbox().Add(IVec2{0, 1}), p.Bitmask())
 	p.colliding = collides
 	return collides&CollidedSolid > 0 || collides&CollidedOneWay == CollidedOneWay
 }
@@ -273,7 +279,7 @@ func (p *Player) updateRunOrWalk(input PlayerInput, maxSpeed float64, canLeap bo
 	p.handleXVelUpdate(input, PlayerWalkAccel, maxSpeed, true)
 
 	_ = p.MoveY()
-	_ = p.MoveX(p.Hitbox()) // TODO: play bump sound / animation?
+	_ = p.MoveX() // TODO: play bump sound / animation?
 
 	if !p.onSolidGround() {
 		return p.startFalling(maxSpeed)
@@ -325,7 +331,7 @@ func (p *Player) startFalling(maxFallXSpeed float64) PlayerState {
 	p.sprite.SetAnim(PlayerAnimJump, p.Vel.X < 0) // TODO: pick the last and middle frames of the animation
 	p.sprite.SetTag(jumpDownTag)
 	// test to see if we're colliding with a one-way platform, if so, increment y-velocity and don't change state.
-	collides := p.Collides(p.Hitbox())
+	collides := p.Collides(p.Hitbox(), p.Bitmask())
 	if collides&CollidedOneWay > 0 && collides.Colliding(p.clipsY) { // if jumping up through a
 		fmt.Println("attempted to fall; not allowed")
 		p.Vel.Y -= PlayerOneWayLiftForce
@@ -347,7 +353,7 @@ func (p *Player) updateFalling(input PlayerInput) (result PlayerState) {
 	p.Vel.Y = min(p.Vel.Y+Gravity/TPS, PlayerTerminalVelocity)
 
 	collidesY := p.MoveY()
-	_ = p.MoveX(p.Hitbox())
+	_ = p.MoveX()
 
 	if p.fallClipmask != 0 && p.Pos.Y > p.fallResetY {
 		p.fallClipmask = 0
@@ -421,7 +427,7 @@ func (p *Player) updateLeapingOrJumping(maxFallXSpeed float64) PlayerState {
 	}
 
 	collidesY := p.MoveY()
-	_ = p.MoveX(p.Hitbox())
+	_ = p.MoveX()
 
 	if collidesY.Colliding(p.clipsY) {
 		p.Vel.Y = 0
@@ -502,7 +508,7 @@ func (p *Player) updateOneWayClimbing(input PlayerInput) PlayerState {
 	p.Vel.Y -= PlayerOneWayLiftForce
 	p.Vel.X = 0
 	collidesY := p.MoveY()
-	_ = p.MoveX(p.Hitbox())
+	_ = p.MoveX()
 	if !collidesY.Colliding(p.clipsY) {
 		return p.startIdling()
 	}
