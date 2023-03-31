@@ -8,7 +8,6 @@ import (
 	"github.com/niftysoft/2d-platformer/internal/ldtk"
 	"image"
 	_ "image/png"
-	"path/filepath"
 )
 
 //go:embed gamedata
@@ -66,7 +65,7 @@ func LoadGameData() (result GameData, err error) {
 //
 // https://ldtk.io/json/ for details on the spec.
 func LoadLdtkJSON(filename string) (*ldtk.LdtkJSON, error) {
-	f, err := gameData.Open(filepath.Join("gamedata", filename))
+	f, err := gameData.Open("gamedata/" + filename)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +173,7 @@ func loadEntities(out *TileLayer, entities []ldtk.EntityInstance) {
 }
 
 func loadImage(path string) (image.Image, error) {
-	f, err := gameData.Open(filepath.Join("gamedata", path))
+	f, err := gameData.Open("gamedata/" + path)
 	if err != nil {
 		return nil, err
 	}
