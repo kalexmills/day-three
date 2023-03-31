@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/kalexmills/asebiten"
 	"sync"
 )
 
@@ -28,6 +29,7 @@ func NewGame() (*Game, error) {
 // Update proceeds the game state.
 // Update is called every tick (1/60 [s] by default).
 func (g *Game) Update() error {
+	asebiten.Update() // call once to update timing data.
 	TPSOnce.Do(func() {
 		TPS = float64(ebiten.TPS())
 	})
