@@ -85,7 +85,8 @@ func (s *PlatformerScene) Draw(screen *ebiten.Image) {
 
 	// draw player sprite
 	opts.GeoM.Translate(float64(s.player.Pos.X), float64(s.player.Pos.Y))
-	screen.DrawImage(s.player.sprite, &opts)
+	s.player.sprite.DrawTo(screen, &opts)
+	//screen.DrawImage(s.player.sprite, &opts)
 
 	// draw player state
 	if s.debug {
@@ -166,11 +167,15 @@ func (s *PlatformerScene) loadBackground(level *Level) error {
 
 // loadEntities loads all entities associated with the provided Level, returning any fatal errors.
 func (s *PlatformerScene) loadEntities(level *Level) error {
+	var err error
 	for _, entity := range level.Entities {
 		switch entity.ID {
 		case EtyPlayer:
 			if s.player == nil {
-				s.player = NewPlayer(s)
+				s.player, err = NewPlayer(s)
+				if err != nil {
+					return err
+				}
 			}
 			s.player.SetPos(entity.PxCoords)
 		}

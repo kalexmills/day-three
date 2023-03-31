@@ -1142,8 +1142,8 @@
 			"tags": [],
 			"exportToToc": false,
 			"doc": null,
-			"width": 16,
-			"height": 24,
+			"width": 48,
+			"height": 48,
 			"resizableX": false,
 			"resizableY": false,
 			"keepAspectRatio": false,
@@ -1501,20 +1501,6 @@
 					"gridTiles": [],
 					"entityInstances": [
 						{
-							"__identifier": "Player",
-							"__grid": [11,11],
-							"__pivot": [0,-0.333],
-							"__tags": [],
-							"__tile": { "x": 0, "y": 240, "w": 16, "h": 16, "tilesetUid": 104 },
-							"__smartColor": "#A7FF24",
-							"iid": "a315d323-66b0-11ec-9cd7-8ddce09157bc",
-							"width": 16,
-							"height": 24,
-							"defUid": 46,
-							"px": [184,176],
-							"fieldInstances": []
-						},
-						{
 							"__identifier": "Chest",
 							"__grid": [31,17],
 							"__pivot": [0.5,1],
@@ -1627,6 +1613,20 @@
 									"params": ["39,8"]
 								}] }
 							]
+						},
+						{
+							"__identifier": "Player",
+							"__grid": [17,4],
+							"__pivot": [0,-0.333],
+							"__tags": [],
+							"__tile": { "x": 0, "y": 240, "w": 16, "h": 16, "tilesetUid": 104 },
+							"__smartColor": "#A7FF24",
+							"iid": "6239fc10-c640-11ed-9a32-ed8069aea4b4",
+							"width": 48,
+							"height": 48,
+							"defUid": 46,
+							"px": [272,75],
+							"fieldInstances": []
 						}
 					]
 				},

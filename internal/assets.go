@@ -4,6 +4,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/kalexmills/asebiten"
 	"github.com/kalexmills/asebiten/aseprite"
+	"image"
 )
 
 type PlayerAnim uint8
@@ -65,11 +66,12 @@ type PlayerSprite struct {
 func (p *PlayerSprite) Update() {
 	if p.curr == nil {
 		p.curr = p.idle
+		p.curr.Resume()
 	}
 	p.curr.Update()
 }
 
-func (p *PlayerSprite) SetAnim(anim PlayerAnim) {
+func (p *PlayerSprite) SetAnim(anim PlayerAnim, left bool) {
 	switch anim {
 	case PlayerAnimIdle:
 		p.curr = p.idle
@@ -82,13 +84,24 @@ func (p *PlayerSprite) SetAnim(anim PlayerAnim) {
 	case PlayerAnimRun:
 		p.curr = p.run
 	}
+	p.facingLeft = left
 	p.curr.Restart()
+	p.curr.Resume()
 }
 
 func (p *PlayerSprite) DrawTo(screen *ebiten.Image, options *ebiten.DrawImageOptions) {
-	opts := &ebiten.DrawImageOptions{}
+	opts := ebiten.DrawImageOptions{}
 	if p.facingLeft {
 		opts.GeoM.Scale(-1, 1) // flip horizontal
-		//opts.GeoM.Translate(p.curr.)
+		opts.GeoM.Translate(float64(p.curr.Bounds().Dx()), 0)
 	}
+	opts.GeoM.Concat(options.GeoM)
+	opts.ColorScale = options.ColorScale
+	opts.Blend = options.Blend
+	opts.Filter = options.Filter
+	p.curr.DrawTo(screen, &opts)
+}
+
+func (p *PlayerSprite) Bounds() image.Rectangle {
+	return p.curr.Bounds()
 }

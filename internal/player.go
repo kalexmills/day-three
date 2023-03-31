@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"golang.org/x/exp/shiny/materialdesign/colornames"
 	"log"
 	"math"
 )
@@ -96,29 +95,34 @@ type Player struct {
 	Pos   IVec2       // pos is position in world coordinates.
 	Vel   Vec2        // vel is velocity in world coordinates.
 
-	keys   []ebiten.Key
-	sprite *ebiten.Image
+	keys []ebiten.Key
 
 	fallResetY    int         // y position past which fallClipmask is reset.
 	fallClipmask  CollideMask // fallClipmask is the clipmask set for this fall state. Reset after Y position has dropped
 	colliding     CollideMask
 	maxFallXSpeed float64 // maxFallXSpeed is the maximum fall speed allowed given how the player started to fall.
+
+	sprite *PlayerSprite
 }
 
-func NewPlayer(scene *PlatformerScene) *Player {
+func NewPlayer(scene *PlatformerScene) (*Player, error) {
+	sprite, err := LoadPlayerAnims()
+	if err != nil {
+		return nil, err
+	}
 	result := &Player{
 		Actor:  &Actor{scene: scene},
-		sprite: placeholderImage(15, 24, colornames.Cyan100),
+		sprite: sprite,
 	}
-	return result
+	result.sprite.Update()
+	return result, nil
 }
 
 // Update updates the player this frame.
 func (p *Player) Update() {
+	p.sprite.Update()
 	input := p.handleInput()
 	nextState := p.state
-
-	// TODO: handle animation and update hitbox here.
 
 	switch p.state {
 	case PlayerStateIdle:
@@ -180,6 +184,7 @@ func (p *Player) cellUnderFoot() (Vec2, CollideMask) {
 }
 
 func (p *Player) startIdling() PlayerState {
+	p.sprite.SetAnim(PlayerAnimIdle, p.Vel.X < 0)
 	return PlayerStateIdle
 }
 
@@ -240,8 +245,10 @@ func (p *Player) clipsY(mask CollideMask) bool {
 // walkingOrRunning starts or continues walking or running depending on whether the run key is held.
 func (p *Player) walkingOrRunning(input PlayerInput) PlayerState {
 	if input&InputRunning > 0 {
+		p.sprite.SetAnim(PlayerAnimRun, p.Vel.X < 0)
 		return PlayerStateRunning
 	} else {
+		p.sprite.SetAnim(PlayerAnimWalk, p.Vel.X < 0)
 		return PlayerStateWalking
 	}
 }
@@ -310,6 +317,7 @@ func (p *Player) handleXVelUpdate(input PlayerInput, accel, maxSpeed float64, us
 // startFalling transitions to the fall state. When this transitions occurs the prior state must provide a maxFallXSpeed
 // based on the prior state.
 func (p *Player) startFalling(maxFallXSpeed float64) PlayerState {
+	p.sprite.SetAnim(PlayerAnimJump, p.Vel.X < 0) // TODO: pick the last and middle frames of the animation
 	// test to see if we're colliding with a one-way platform, if so, increment y-velocity and don't change state.
 	collides := p.Collides(p.Hitbox())
 	if collides&CollidedOneWay > 0 && collides.Colliding(p.clipsY) { // if jumping up through a
@@ -362,6 +370,8 @@ func (p *Player) startJumping(input PlayerInput) PlayerState {
 
 // startJumpingOrLeaping starts jumping or leaping depending on whether the run bit is set in the input.
 func (p *Player) startJumpingOrLeaping(input PlayerInput) PlayerState {
+	p.sprite.SetAnim(PlayerAnimJump, p.Vel.X < 0)
+
 	if input&InputClimbedDown > 0 { // if the player is jumping down off a one-way platform
 		_, underfoot := p.cellUnderFoot()
 		if underfoot&CollidedOneWay > 0 {
@@ -417,6 +427,7 @@ func (p *Player) updateLeapingOrJumping(maxFallXSpeed float64) PlayerState {
 // startLadderClimbing performs a quick collision check to see if a ladder is underfoot, and starts climbing if so. The
 // caller should check the return value to ensure a ladder was found before proceeding.
 func (p *Player) startLadderClimbing(input PlayerInput) PlayerState {
+	// TODO: we don't have animations for this.
 	// test point under foot
 	coords, cell := p.cellUnderFoot()
 	if cell&CollideLadder == 0 {
@@ -489,6 +500,7 @@ func (p *Player) updateOneWayClimbing(input PlayerInput) PlayerState {
 	return PlayerStateOneWayClimbing
 }
 
+// Hitbox retrieves the bounds of the current image.
 func (p *Player) Hitbox() (result IRect) {
 	result.X, result.Y = p.Pos.X, p.Pos.Y
 	result.W, result.H = p.sprite.Bounds().Dx(), p.sprite.Bounds().Dy()
