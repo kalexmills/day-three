@@ -244,11 +244,16 @@ func (p *Player) clipsY(mask CollideMask) bool {
 
 // walkingOrRunning starts or continues walking or running depending on whether the run key is held.
 func (p *Player) walkingOrRunning(input PlayerInput) PlayerState {
+	p.sprite.SetFacing(p.Vel.X < 0)
 	if input&InputRunning > 0 {
-		p.sprite.SetAnim(PlayerAnimRun, p.Vel.X < 0)
+		if p.state != PlayerStateRunning {
+			p.sprite.SetAnim(PlayerAnimRun, p.Vel.X < 0)
+		}
 		return PlayerStateRunning
 	} else {
-		p.sprite.SetAnim(PlayerAnimWalk, p.Vel.X < 0)
+		if p.state != PlayerStateWalking {
+			p.sprite.SetAnim(PlayerAnimWalk, p.Vel.X < 0)
+		}
 		return PlayerStateWalking
 	}
 }

@@ -89,6 +89,10 @@ func (p *PlayerSprite) SetAnim(anim PlayerAnim, left bool) {
 	p.curr.Resume()
 }
 
+func (p *PlayerSprite) SetFacing(left bool) {
+	p.facingLeft = left
+}
+
 func (p *PlayerSprite) DrawTo(screen *ebiten.Image, options *ebiten.DrawImageOptions) {
 	opts := ebiten.DrawImageOptions{}
 	if p.facingLeft {
