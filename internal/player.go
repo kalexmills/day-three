@@ -384,7 +384,7 @@ func (p *Player) startJumpingOrLeaping(input PlayerInput) PlayerState {
 			p.Vel.Y = -PlayerLadderJumpForce
 			p.fallClipmask = underfoot
 			p.fallResetY = p.Hitbox().Rectangle().Max.Y
-			return PlayerStateFalling
+			return p.startFalling(PlayerMaxWalkSpeed)
 		}
 	}
 

@@ -29,7 +29,7 @@
  ],
  "meta": {
   "app": "https://www.aseprite.org/",
-  "version": "1.3-rc2-arm64",
+  "version": "1.3-rc2-x64",
   "image": "jump.png",
   "format": "RGBA8888",
   "size": { "w": 144, "h": 48 },
@@ -43,7 +43,7 @@
    { "name": "Layer", "opacity": 255, "blendMode": "normal" }
   ],
   "slices": [
-   { "name": "Hitbox", "color": "#0000ffff", "keys": [{ "frame": 1, "bounds": {"x": 15, "y": 8, "w": 25, "h": 32 } }] }
+   { "name": "Hitbox", "color": "#0000ffff", "keys": [{ "frame": 0, "bounds": {"x": 15, "y": 9, "w": 25, "h": 32 } }, { "frame": 1, "bounds": {"x": 15, "y": 9, "w": 25, "h": 32 } }, { "frame": 2, "bounds": {"x": 15, "y": 9, "w": 25, "h": 32 } }] }
   ]
  }
 }

@@ -27,7 +27,7 @@ type GameData struct {
 }
 
 // ldtkPath is the path to the LDtk file representing all of this game's level data.
-const ldtkPath = "trash-knight-level-1.ldtk"
+const ldtkPath = "platformer.ldtk"
 
 // LoadGameData loads all gamedata from the expected ldtkPath relative to the gamedata embed folder, including all
 // referenced tilesets, which are expected to be found under gamedata/atlas.

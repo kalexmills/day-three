@@ -83,7 +83,7 @@
  ],
  "meta": {
   "app": "https://www.aseprite.org/",
-  "version": "1.3-rc2-arm64",
+  "version": "1.3-rc2-x64",
   "image": "idle.png",
   "format": "RGBA8888",
   "size": { "w": 432, "h": 48 },
