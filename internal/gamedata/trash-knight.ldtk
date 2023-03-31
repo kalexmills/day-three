@@ -40,7 +40,7 @@
 	"defs": { "layers": [
 		{
 			"__type": "IntGrid",
-			"identifier": "Collision",
+			"identifier": "Collisions",
 			"type": "IntGrid",
 			"uid": 1,
 			"doc": "Holds collisions",
@@ -742,7 +742,7 @@
 			"fieldInstances": [],
 			"layerInstances": [
 				{
-					"__identifier": "Collision",
+					"__identifier": "Collisions",
 					"__type": "IntGrid",
 					"__cWid": 30,
 					"__cHei": 16,

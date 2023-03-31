@@ -130,7 +130,7 @@ func (s *PlatformerScene) LoadLevel(id UID) error {
 		return err
 	}
 	if err := s.loadCells(level); err != nil {
-
+		return err
 	}
 	if err := s.loadEntities(level); err != nil {
 		return err
@@ -258,14 +258,14 @@ type Actor struct {
 
 // MoveX moves this actor's hitbox by the given amount in the X-direction, returning a CollideMask that explains which
 // solid collisions occurred, if any. Y-velocity is included in order to test collisions for one-way platforms.
-func (a *Actor) MoveX(hitbox IRect, bitgrid BitGrid, amt float64, clip ClipFunc) (actual int, result CollideMask) {
-	return a.scene.MoveX(hitbox, bitgrid, amt, clip)
+func (a *Actor) MoveX(hitbox IRect, amt float64, clip ClipFunc) (actual int, result CollideMask) {
+	return a.scene.MoveX(hitbox, amt, clip)
 }
 
 // MoveY moves this actor's hitbox by the given amount in the Y-direction, returning a CollideMask that explains which
 // solid collisions occurred, if any.
-func (a *Actor) MoveY(hitbox IRect, bitgrid BitGrid, amt float64, clip ClipFunc) (actual int, result CollideMask) {
-	return a.scene.MoveY(hitbox, bitgrid, amt, clip)
+func (a *Actor) MoveY(hitbox IRect, amt float64, clip ClipFunc) (actual int, result CollideMask) {
+	return a.scene.MoveY(hitbox, amt, clip)
 }
 
 // CellAt provides the coordinates and contents of the cell containing the provided point.
@@ -274,8 +274,8 @@ func (a *Actor) CellAt(point Vec2) (Vec2, CollideMask) {
 }
 
 // Collides performs a collision test for this actor, returning the collidemask found.
-func (a *Actor) Collides(hitbox IRect, bitgrid BitGrid) CollideMask {
-	return a.scene.Collides(hitbox, bitgrid, func(mask CollideMask) bool {
+func (a *Actor) Collides(hitbox IRect) CollideMask {
+	return a.scene.Collides(hitbox, func(mask CollideMask) bool {
 		return false
 	})
 }
@@ -341,18 +341,18 @@ func (m CollideMask) Colliding(clip ClipFunc) bool {
 // positive or negative. Returns the actual amount moved without colliding with a solid object and any items currently
 // collided with. MoveX only moves the provided box by integer amounts. Callers are responsible for managing the state
 // of their own floating point "remainder" and including it in the amount passed on each frame.
-func (s *PlatformerScene) MoveX(hitbox IRect, bitgrid BitGrid, amt float64, clip ClipFunc) (actual int, result CollideMask) {
-	return s.move(hitbox, bitgrid, amt, IVec2{X: 1, Y: 0}, clip)
+func (s *PlatformerScene) MoveX(hitbox IRect, amt float64, clip ClipFunc) (actual int, result CollideMask) {
+	return s.move(hitbox, amt, IVec2{X: 1, Y: 0}, clip)
 }
 
 // MoveY is like MoveX, except it moves in the Y-direction. See MoveX for documentation.
-func (s *PlatformerScene) MoveY(hitbox IRect, bitgrid BitGrid, amt float64, clip ClipFunc) (actual int, result CollideMask) {
-	return s.move(hitbox, bitgrid, amt, IVec2{X: 0, Y: 1}, clip)
+func (s *PlatformerScene) MoveY(hitbox IRect, amt float64, clip ClipFunc) (actual int, result CollideMask) {
+	return s.move(hitbox, amt, IVec2{X: 0, Y: 1}, clip)
 }
 
 // move moves the provided hitbox by the requested amount along the provided axis. The provided velocity is used to
 // ensure that one-way platforms are handled appropriately.
-func (s *PlatformerScene) move(hitbox IRect, bitgrid BitGrid, amount float64, axis IVec2, clip ClipFunc) (actual int, result CollideMask) {
+func (s *PlatformerScene) move(hitbox IRect, amount float64, axis IVec2, clip ClipFunc) (actual int, result CollideMask) {
 	move := int(math.Round(amount))
 	if move == 0 {
 		return 0, s.AllOverlapping(hitbox) // TODO: must be pixel-perfect
@@ -361,11 +361,9 @@ func (s *PlatformerScene) move(hitbox IRect, bitgrid BitGrid, amount float64, ax
 	sign := int(math.Copysign(1, amount))
 	for move != 0 {
 		displacement := axis.Scale(sign)
-		fmt.Println("offset:", bitgrid.offset)
-		collideMask := s.Collides(hitbox.Add(displacement), bitgrid.Add(displacement), clip)
+		collideMask := s.Collides(hitbox.Add(displacement), clip)
 		if !collideMask.Colliding(clip) {
 			hitbox = hitbox.Add(displacement)
-			bitgrid = bitgrid.Add(displacement)
 			move -= sign
 			actualMoved += sign
 		} else {
@@ -381,28 +379,8 @@ func (s *PlatformerScene) at(pt Vec2) (Vec2, CollideMask) {
 	return Vec2{X: float64(cx * s.cellSize), Y: float64(cy * s.cellSize)}, s.gridData(pt.X, pt.Y).CollideMask()
 }
 
-func (s *PlatformerScene) Collides(hitbox IRect, bitgrid BitGrid, clip ClipFunc) CollideMask {
-	boxCollides := s.BoxCollides(hitbox, clip)
-	if boxCollides == 0 {
-		return 0
-	}
-	return s.GridCollides(bitgrid, clip)
-}
-
-func (s *PlatformerScene) GridCollides(bitgrid BitGrid, clip ClipFunc) (result CollideMask) {
-	var debug IVec2
-	bitgrid.ForEach(func(x, y int, set bool) (halt bool) {
-		debug.X = max(debug.X, x)
-		debug.Y = max(debug.Y, y)
-		dat := s.gridData(float64(x), float64(y))
-		if clip(dat.CollideMask()) {
-			return false
-		}
-		result = result | dat.CollideMask()
-		return true
-	})
-	fmt.Printf("max coordinate tested: %#v; result: %v\n", debug, result)
-	return result
+func (s *PlatformerScene) Collides(hitbox IRect, clip ClipFunc) CollideMask {
+	return s.BoxCollides(hitbox, clip)
 }
 
 // Collides performs collision detection for the provided hitbox, travelling at the provided velocity. Velocity is used

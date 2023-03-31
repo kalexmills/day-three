@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/kalexmills/asebiten"
-	"github.com/kalexmills/asebiten/aseprite"
 	"image"
 )
 
@@ -13,23 +12,21 @@ type PlayerAnim uint8
 const (
 	PlayerAnimIdle PlayerAnim = iota
 	PlayerAnimJump
-	PlayerAnimLand
 	PlayerAnimRun
 	PlayerAnimWalk
 )
 
 const (
-	jumpUpTag   = "Jump up"
-	jumpMaxTag  = "Max Height"
-	jumpDownTag = "Jump Down"
+	jumpUpTag   = "up"
+	jumpMaxTag  = "max"
+	jumpDownTag = "down"
 )
 
 var anims = map[PlayerAnim]string{
 	PlayerAnimIdle: "idle.json",
 	PlayerAnimJump: "jump.json",
-	PlayerAnimLand: "land.json",
 	PlayerAnimRun:  "run.json",
-	PlayerAnimWalk: "walk.json",
+	PlayerAnimWalk: "run.json",
 }
 
 func LoadPlayerAnims() (*PlayerSprite, error) {
@@ -38,12 +35,12 @@ func LoadPlayerAnims() (*PlayerSprite, error) {
 		anims: make(map[PlayerAnim]*asebiten.Animation, len(anims)),
 	}
 	for anim, path := range anims {
-		result.anims[anim], err = aseprite.LoadAnimation(gameData, "gamedata/sprites/"+path)
+		result.anims[anim], err = asebiten.LoadAnimation(gameData, "gamedata/sprites/"+path)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if err := result.loadMasks(); err != nil {
+	if err := result.loadHitboxes(); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -54,11 +51,11 @@ type PlayerSprite struct {
 	currKey PlayerAnim
 	currTag string
 
-	sheets map[PlayerAnim]aseprite.SpriteSheet
+	sheets map[PlayerAnim]asebiten.SpriteSheet
 	anims  map[PlayerAnim]*asebiten.Animation
 
-	// collision masks for the sprite.
-	masks map[PlayerAnim]map[string][]BitGrid
+	// collision hitboxes for the sprite.
+	hitboxes map[PlayerAnim]image.Rectangle
 
 	facingLeft bool // true if the player is facing left.
 }
@@ -110,14 +107,14 @@ func (p *PlayerSprite) Bounds() image.Rectangle {
 	return p.curr.Bounds()
 }
 
-// Bitmask retrieves the collision mask for the frame of the current animation.
-func (p *PlayerSprite) Bitmask() BitGrid {
-	fmt.Println(p.currKey, p.currTag, p.curr.FrameIdx())
-	return p.masks[p.currKey][p.currTag][p.curr.FrameIdx()]
+const hitboxSliceID = "Hitbox"
+
+func (p *PlayerSprite) Hitbox() image.Rectangle {
+	return p.hitboxes[p.currKey]
 }
 
-func (p *PlayerSprite) loadMasks() error {
-	p.masks = make(map[PlayerAnim]map[string][]BitGrid, len(p.anims))
+func (p *PlayerSprite) loadHitboxes() error {
+	p.hitboxes = make(map[PlayerAnim]image.Rectangle)
 	for key := range p.anims {
 		if err := p.loadMasksForAnim(key); err != nil {
 			return err
@@ -132,22 +129,12 @@ func (p *PlayerSprite) loadMasksForAnim(key PlayerAnim) error {
 	if anim == nil {
 		return fmt.Errorf("unexpected player animation key: %d", key)
 	}
-	p.masks[key] = make(map[string][]BitGrid, len(anim.FramesByTagName))
 
-	for tag, frames := range anim.FramesByTagName {
-		for _, frame := range frames {
-			img := frame.Image
-			bg := NewBitGrid(img.Bounds().Dx(), img.Bounds().Dy())
-			for x := 0; x < img.Bounds().Dx(); x++ {
-				for y := 0; y < img.Bounds().Dy(); y++ {
-					color := img.At(x, y)
-					if _, _, _, a := color.RGBA(); a != 0 {
-						bg.Set(x, y)
-					}
-				}
-			}
-			p.masks[key][tag] = append(p.masks[key][tag], bg)
+	for _, slice := range anim.Source.Meta.Slices {
+		if slice.Name == hitboxSliceID {
+			p.hitboxes[key] = slice.Keys[0].Bounds.ImageRect()
+			return nil
 		}
 	}
-	return nil
+	return fmt.Errorf("no 'Hitbox' slice was found for anim %v", key)
 }

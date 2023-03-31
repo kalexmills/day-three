@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"image"
 	"log"
 	"math"
 )
@@ -40,7 +41,6 @@ const (
 	InputClimbed PlayerInput = InputClimbedUp | InputClimbedDown  // InputClimbed is an input mask which doesn't distinguish between climbing up or down.
 )
 
-// TODO: this refactor
 //// Running returns true if the run button is held
 //func (i PlayerInput) Running() bool {
 //	return i&InputRunning > 0
@@ -158,7 +158,7 @@ func (p *Player) SetPos(pos IVec2) {
 
 // MoveX moves this player by X, updating its hitbox, velocity, and position as needed.
 func (p *Player) MoveX() CollideMask {
-	dx, collidesWith := p.Actor.MoveX(p.Hitbox(), p.Bitmask(), p.Vel.X, p.clipsX)
+	dx, collidesWith := p.Actor.MoveX(p.Hitbox(), p.Vel.X, p.clipsX)
 	p.Pos.X += dx
 	if collidesWith.Colliding(p.clipsX) {
 		p.Vel.X = 0
@@ -166,15 +166,9 @@ func (p *Player) MoveX() CollideMask {
 	return collidesWith
 }
 
-func (p *Player) Bitmask() BitGrid {
-	grid := p.sprite.Bitmask()
-	grid = grid.Add(p.Pos)
-	return grid
-}
-
 // MoveY moves this player by Y, updating its hitbox, velocity, and position as needed.
 func (p *Player) MoveY() CollideMask {
-	dy, collidesWith := p.Actor.MoveY(p.Hitbox(), p.Bitmask(), p.Vel.Y, p.clipsY)
+	dy, collidesWith := p.Actor.MoveY(p.Hitbox(), p.Vel.Y, p.clipsY)
 	p.Pos.Y += dy
 	if collidesWith.Colliding(p.clipsY) {
 		p.Vel.Y = 0
@@ -223,7 +217,7 @@ func (p *Player) updateIdle(input PlayerInput) PlayerState {
 
 // onSolidGround returns true iff the player is on solid ground.
 func (p *Player) onSolidGround() bool {
-	collides := p.Actor.Collides(p.Hitbox().Add(IVec2{0, 1}), p.Bitmask())
+	collides := p.Actor.Collides(p.Hitbox().Add(IVec2{0, 1}))
 	p.colliding = collides
 	return collides&CollidedSolid > 0 || collides&CollidedOneWay == CollidedOneWay
 }
@@ -331,7 +325,7 @@ func (p *Player) startFalling(maxFallXSpeed float64) PlayerState {
 	p.sprite.SetAnim(PlayerAnimJump, p.Vel.X < 0) // TODO: pick the last and middle frames of the animation
 	p.sprite.SetTag(jumpDownTag)
 	// test to see if we're colliding with a one-way platform, if so, increment y-velocity and don't change state.
-	collides := p.Collides(p.Hitbox(), p.Bitmask())
+	collides := p.Collides(p.Hitbox())
 	if collides&CollidedOneWay > 0 && collides.Colliding(p.clipsY) { // if jumping up through a
 		fmt.Println("attempted to fall; not allowed")
 		p.Vel.Y -= PlayerOneWayLiftForce
@@ -518,9 +512,8 @@ func (p *Player) updateOneWayClimbing(input PlayerInput) PlayerState {
 
 // Hitbox retrieves the bounds of the current image.
 func (p *Player) Hitbox() (result IRect) {
-	result.X, result.Y = p.Pos.X, p.Pos.Y
-	result.W, result.H = p.sprite.Bounds().Dx(), p.sprite.Bounds().Dy()
-	return result
+	r := p.sprite.Hitbox().Add(image.Point{X: p.Pos.X, Y: p.Pos.Y})
+	return IRect{X: r.Min.X, Y: r.Min.Y, W: r.Dx(), H: r.Dy()}
 }
 
 // handleInput handles all player input and returns PlayerInput flags which are used to handle state changes.
